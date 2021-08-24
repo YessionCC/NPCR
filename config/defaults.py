@@ -32,7 +32,7 @@ _C.INPUT.SIZE_TRAIN = [720,450]
 # Size of the image during test
 _C.INPUT.SIZE_TEST = [720,450]
 #
-_C.INPUT.LAYER_NUM = 3
+_C.INPUT.LAYER_NUM = 1
 # Minimum scale for the image during training
 _C.INPUT.MIN_SCALE_TRAIN = 0.5
 # Maximum scale for the image during test
