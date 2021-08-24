@@ -1,7 +1,7 @@
 import numpy as np
 
 path = './ExParamGen/CamPose.inf'
-pathout = './pretrained/CamPose.inf'
+pathout = './models/CamPose.inf'
 mat = np.loadtxt(path)
 
 def getrotz(a):
