@@ -4,6 +4,7 @@ from layers.pcpr_layer import PCPRModel
 import pcpr
 import numpy as np 
 import matplotlib.pyplot as plt
+from config import cfg
 import cv2
 
 
@@ -53,7 +54,7 @@ class PCPRender(torch.nn.Module):
         pfs = point_features
         rgbas = []
         deps = []
-        layer_loop = 6#self.layer_num
+        layer_loop = cfg.INPUT.LAYER_NUM
         for layer in range(layer_loop):
             # out_feature (batch, feature_dim, tar_height, tar_width )
             # out_depth (batch, 1, tar_height, tar_width )
@@ -102,7 +103,7 @@ class PCPRender(torch.nn.Module):
 
             if layer != 0:
                 ddeps = ((deps[layer]-deps[layer-1])[0][0]).detach()
-                sec = ddeps>0.05 #self.depth_thr
+                sec = ddeps>cfg.WEIGHTS.DEPTH_THR
                 deps[layer][:,:,sec] = 0
                 x[:, 3, sec] = 0
 
