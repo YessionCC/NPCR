@@ -1,5 +1,4 @@
 *.zip
 *.pth
 output/
-datasets/
 models/tensorboard_test
