@@ -2,7 +2,7 @@
 
 ![img](./results/img.png)
 
-Neural Point Cloud Rendering via Depth Peeling Projection and Temporal Refine
+Neural Point Cloud Rendering via Depth Peeling Multi-Projection and Temporal Refine
 
 ## Abstract
 In order to improve temporal stability and reduce overfitting, I improved NOPC by adding depth peeling projection and temporal refine reprojection
