@@ -113,7 +113,7 @@ for ID in trange(camNum):
         res = res_ic*rws[0]+res1*rws[1]
         rgba = rgba_o*rws[2]+res*rws[3]
 
-        loss1, loss2 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0))
+        loss1, loss2 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0).detach())
 
 
         l = loss1 + loss2
