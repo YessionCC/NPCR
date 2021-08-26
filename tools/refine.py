@@ -13,7 +13,7 @@ from data import make_data_loader
 from engine.trainer import do_train
 from modeling.build import build_model
 from solver import make_optimizer, WarmupMultiStepLR
-from layers import make_loss
+from layers import make_temp_loss
 from utils.logger import setup_logger
 from data.datasets.utils import campose_to_extrinsic, read_intrinsics
 import matplotlib.pyplot as plt
@@ -40,6 +40,7 @@ test_loader, vertex_list,dataset = make_data_loader(cfg, is_train=False)
 model = build_model(cfg, vertex_list)
 optimizer = make_optimizer(cfg, model)
 model = torch.load(os.path.join(model_path,para_file))
+optimizer = torch.load(os.path.join(model_path,opt_file))
 model.train()
 model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
 model = model.cuda()
@@ -86,7 +87,7 @@ def getMap(H,W,Tx,Kx,rgbax,pw,rgba_std):
     res[res==0]=rgba_std[res==0]
     return res
 
-loss_fn = make_loss()
+loss_fn = make_temp_loss()
 rws = torch.tensor(cfg.WEIGHTS.REFINE_WEIGHTS).cuda().float()
 
 for ID in trange(camNum):
@@ -95,13 +96,7 @@ for ID in trange(camNum):
     res,depth,inds,pw = model(point_indexes, in_points, K, T,
                         near_far_max_splatting_size, num_points,target)
 
-    # vdep = depth[0].detach().cpu().clone()
-    # vdep = vdep.permute(1,2,0)
-    # cv2.imshow('dep', vdep.numpy())
-    # cv2.waitKey(0)
-    img = res[0]
-    mask = img[3:4,:,:]
-    rgba_o=img*mask+(1.-mask)
+    rgba_o=res[0][:3,:,:]
     rgba = rgba_o
     depth = depth[0][0]
     T = T[0];K = K[0]
@@ -116,15 +111,9 @@ for ID in trange(camNum):
         res_ic = getMap(H,W,Tpre[0], Kpre[0], rgba_ic, pw, rgba_o)
 
         res = res_ic*rws[0]+res1*rws[1]
-        res = res*mask+(1.-mask)
         rgba = rgba_o*rws[2]+res*rws[3]
-        # t1 = np.clip(res.permute(1,2,0).detach().cpu().numpy(), 0, 1)
-        # cv2.imwrite('./pretrained/rgba/%04d.jpg'%ID, (t1*255).astype('uint8'))
-        # t2 = rgba_o.permute(1,2,0).detach().cpu().numpy()
-        # plt.figure(); plt.imshow(t1[:,:,:3]); plt.show()
-        # plt.figure(); plt.imshow(t2[:,:,:3]); plt.show()
 
-        loss1, loss2, loss3 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0))
+        loss1, loss2 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0))
 
 
         l = loss1 + loss2
@@ -136,14 +125,14 @@ for ID in trange(camNum):
         optimizer.step()
 
         Tpre, Kpre, rgba_pre = Tpre[1:], Kpre[1:], rgba_pre[1:]
-        del loss1, loss2, loss3, l, res1, res_ic
+        del loss1, loss2, l, res1, res_ic
         
     Tpre.append(T) 
     Kpre.append(K)
     rgba_pre.append(rgba_o.detach().cpu())# save memory
     rgba_ic = rgba.detach().cpu()
     del res,depth,inds,pw
-    del img, mask, rgba, rgba_o
+    del rgba, rgba_o
     
 
 
