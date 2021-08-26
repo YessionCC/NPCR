@@ -67,7 +67,7 @@ class LossNetwork(torch.nn.Module):
 
 class Temporal_loss(torch.nn.Module):
     def __init__(self):
-        super(Perceptual_loss, self).__init__()
+        super(Temporal_loss, self).__init__()
 
         #self.model = models_lpf.resnet50(filter_size = 5)
         #self.model.load_state_dict(torch.load('/data/wmy/NR/models/resnet50_lpf5.pth.tar')['state_dict'])
