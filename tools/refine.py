@@ -91,6 +91,7 @@ loss_fn = make_temp_loss()
 rws = torch.tensor(cfg.WEIGHTS.REFINE_WEIGHTS).cuda().float()
 
 for ID in trange(camNum):
+    optimizer.zero_grad()
     T = Ts[ID:ID+1,:,:].cuda()
     K = Ks[ID:ID+1,:,:].cuda()
     res,depth,inds,pw = model(point_indexes, in_points, K, T,
