@@ -90,52 +90,51 @@ def getMap(H,W,Tx,Kx,rgbax,pw,rgba_std):
 loss_fn = make_temp_loss()
 rws = torch.tensor(cfg.WEIGHTS.REFINE_WEIGHTS).cuda().float()
 
-for ID in trange(camNum):
+for epc in range(10):
     optimizer.zero_grad()
-    T = Ts[ID:ID+1,:,:].cuda()
-    K = Ks[ID:ID+1,:,:].cuda()
-    res,depth,inds,pw = model(point_indexes, in_points, K, T,
-                        near_far_max_splatting_size, num_points,target)
+    for ID in trange(camNum):
+        T = Ts[ID:ID+1,:,:].cuda()
+        K = Ks[ID:ID+1,:,:].cuda()
+        res,depth,inds,pw = model(point_indexes, in_points, K, T,
+                            near_far_max_splatting_size, num_points,target)
 
-    rgba_o=res[0][:3,:,:]
-    rgba = rgba_o
-    depth = depth[0][0]
-    T = T[0];K = K[0]
+        rgba_o=res[0][:3,:,:]
+        rgba = rgba_o
+        depth = depth[0][0]
+        T = T[0];K = K[0]
 
-    if len(rgba_pre)>=1:
-        H, W = depth.shape
-        res1 = getMap(H,W,Tpre[0], Kpre[0], rgba_pre[0], pw, rgba_o)
-        #res2 = getMap(H,W,Tpre[1], Kpre[1], rgba_pre[1], pw, rgba_o)
-        # res3 = getMap(H,W,Tpre[2], Kpre[2], rgba_pre[2], pw, rgba_o)
-        # res4 = getMap(H,W,Tpre[3], Kpre[3], rgba_pre[3], pw, rgba_o)
-        # res5 = getMap(H,W,Tpre[4], Kpre[4], rgba_pre[4], pw, rgba_o)
-        res_ic = getMap(H,W,Tpre[0], Kpre[0], rgba_ic, pw, rgba_o)
+        if len(rgba_pre)>=1:
+            H, W = depth.shape
+            res1 = getMap(H,W,Tpre[0], Kpre[0], rgba_pre[0], pw, rgba_o)
+            #res2 = getMap(H,W,Tpre[1], Kpre[1], rgba_pre[1], pw, rgba_o)
+            # res3 = getMap(H,W,Tpre[2], Kpre[2], rgba_pre[2], pw, rgba_o)
+            # res4 = getMap(H,W,Tpre[3], Kpre[3], rgba_pre[3], pw, rgba_o)
+            # res5 = getMap(H,W,Tpre[4], Kpre[4], rgba_pre[4], pw, rgba_o)
+            res_ic = getMap(H,W,Tpre[0], Kpre[0], rgba_ic, pw, rgba_o)
 
-        res = res_ic*rws[0]+res1*rws[1]
-        rgba = rgba_o*rws[2]+res*rws[3]
+            res = res_ic*rws[0]+res1*rws[1]
+            rgba = rgba_o*rws[2]+res*rws[3]
 
-        loss1, loss2 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0).detach())
+            loss1, loss2 = loss_fn(rgba_o.unsqueeze(0), res.unsqueeze(0).detach())
 
 
-        l = loss1 + loss2
-        print('refine loss: {}'.format(l.item()))
-        #l.backward()
-        with amp.scale_loss(l, optimizer) as scaled_loss:
-            scaled_loss.backward()
+            l = loss1 + loss2
+            print('refine loss: {}'.format(l.item()))
+            #l.backward()
+            with amp.scale_loss(l, optimizer) as scaled_loss:
+                scaled_loss.backward()
 
-        optimizer.step()
+            Tpre, Kpre, rgba_pre = Tpre[1:], Kpre[1:], rgba_pre[1:]
+            del loss1, loss2, l, res1, res_ic
 
-        Tpre, Kpre, rgba_pre = Tpre[1:], Kpre[1:], rgba_pre[1:]
-        del loss1, loss2, l, res1, res_ic
-        
-    Tpre.append(T) 
-    Kpre.append(K)
-    rgba_pre.append(rgba_o.detach().cpu())# save memory
-    rgba_ic = rgba.detach().cpu()
-    del res,depth,inds,pw
-    del rgba, rgba_o
-    
+        Tpre.append(T) 
+        Kpre.append(K)
+        rgba_pre.append(rgba_o.detach().cpu())# save memory
+        rgba_ic = rgba.detach().cpu()
+        del res,depth,inds,pw
+        del rgba, rgba_o
 
+    optimizer.step()
 
 torch.save(model, os.path.join(model_path,para_file))
 torch.save(optimizer, os.path.join(model_path,opt_file))
